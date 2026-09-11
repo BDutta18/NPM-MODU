@@ -1,0 +1,479 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    intcblock 0 1 32 4
+    bytecblock "provider_balance" "asset_id" 0x6372656469745f "provider" "facilitator" "price"
+    txn ApplicationID
+    bnz main_after_if_else@2
+    // contracts/modu_escrow.py:30-31
+    // # ── global state ───────────────────────────────────────────────
+    // self.provider: Account = Global.zero_address        # API developer
+    bytec_3 // "provider"
+    global ZeroAddress
+    app_global_put
+    // contracts/modu_escrow.py:32
+    // self.facilitator: Account = Global.zero_address     # modu proxy backend
+    bytec 4 // "facilitator"
+    global ZeroAddress
+    app_global_put
+    // contracts/modu_escrow.py:33
+    // self.asset_id: UInt64 = UInt64(0)                  # ASA to settle in
+    bytec_1 // "asset_id"
+    intc_0 // 0
+    app_global_put
+    // contracts/modu_escrow.py:34
+    // self.price: UInt64 = UInt64(0)                     # µASA per API call
+    bytec 5 // "price"
+    intc_0 // 0
+    app_global_put
+    // contracts/modu_escrow.py:36-37
+    // # running total the provider can withdraw
+    // self.provider_balance: UInt64 = UInt64(0)
+    bytec_0 // "provider_balance"
+    intc_0 // 0
+    app_global_put
+
+main_after_if_else@2:
+    // contracts/modu_escrow.py:28
+    // class ModuEscrow(ARC4Contract):
+    txn OnCompletion
+    !
+    assert
+    txn ApplicationID
+    bz main_create_NoOp@12
+    pushbytess 0x034d4f7a 0x732493a3 0xe2c54ae6 0xb7355fd1 0xe5459b4b 0x559a6dac // method "opt_in_asset()void", method "deposit(axfer,pay)void", method "use_credit(address)void", method "withdraw()void", method "credit_balance(address)uint64", method "box_mbr()uint64"
+    txna ApplicationArgs 0
+    match opt_in_asset deposit use_credit withdraw credit_balance main_box_mbr_route@10
+    err
+
+main_box_mbr_route@10:
+    // contracts/modu_escrow.py:199
+    // @arc4.abimethod(readonly=True)
+    pushbytes 0x151f7c750000000000005334
+    log
+    intc_1 // 1
+    return
+
+main_create_NoOp@12:
+    // contracts/modu_escrow.py:28
+    // class ModuEscrow(ARC4Contract):
+    pushbytes 0x79bca08b // method "create(address,address,uint64,uint64)void"
+    txna ApplicationArgs 0
+    match create
+    err
+
+
+// contracts.modu_escrow.ModuEscrow.create[routing]() -> void:
+create:
+    // contracts/modu_escrow.py:48
+    // @arc4.abimethod(create="require")
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_2 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_2 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txna ApplicationArgs 3
+    dup
+    len
+    pushint 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    pushint 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // contracts/modu_escrow.py:57
+    // self.provider = provider
+    bytec_3 // "provider"
+    uncover 4
+    app_global_put
+    // contracts/modu_escrow.py:58
+    // self.facilitator = facilitator
+    bytec 4 // "facilitator"
+    uncover 3
+    app_global_put
+    // contracts/modu_escrow.py:59
+    // self.asset_id = asset.id
+    bytec_1 // "asset_id"
+    uncover 2
+    app_global_put
+    // contracts/modu_escrow.py:60
+    // self.price = price
+    bytec 5 // "price"
+    swap
+    app_global_put
+    // contracts/modu_escrow.py:61
+    // self.provider_balance = UInt64(0)
+    bytec_0 // "provider_balance"
+    intc_0 // 0
+    app_global_put
+    // contracts/modu_escrow.py:48
+    // @arc4.abimethod(create="require")
+    intc_1 // 1
+    return
+
+
+// contracts.modu_escrow.ModuEscrow.opt_in_asset[routing]() -> void:
+opt_in_asset:
+    // contracts/modu_escrow.py:78
+    // self._require_provider()
+    callsub _require_provider
+    // contracts/modu_escrow.py:79
+    // assert self.asset_id != UInt64(0), "asset not configured"
+    intc_0 // 0
+    bytec_1 // "asset_id"
+    app_global_get_ex
+    assert // check self.asset_id exists
+    dup
+    assert // asset not configured
+    // contracts/modu_escrow.py:81-86
+    // itxn.AssetTransfer(
+    //     xfer_asset=self.asset_id,
+    //     asset_receiver=Global.current_application_address,
+    //     asset_amount=UInt64(0),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // contracts/modu_escrow.py:83
+    // asset_receiver=Global.current_application_address,
+    global CurrentApplicationAddress
+    // contracts/modu_escrow.py:84
+    // asset_amount=UInt64(0),
+    intc_0 // 0
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    itxn_field XferAsset
+    // contracts/modu_escrow.py:81
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // contracts/modu_escrow.py:85
+    // fee=UInt64(0),
+    intc_0 // 0
+    itxn_field Fee
+    // contracts/modu_escrow.py:81-86
+    // itxn.AssetTransfer(
+    //     xfer_asset=self.asset_id,
+    //     asset_receiver=Global.current_application_address,
+    //     asset_amount=UInt64(0),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // contracts/modu_escrow.py:67
+    // @arc4.abimethod
+    intc_1 // 1
+    return
+
+
+// contracts.modu_escrow.ModuEscrow.deposit[routing]() -> void:
+deposit:
+    // contracts/modu_escrow.py:92
+    // @arc4.abimethod
+    txn GroupIndex
+    pushint 2
+    -
+    dup
+    gtxns TypeEnum
+    intc_3 // axfer
+    ==
+    assert // transaction type is axfer
+    txn GroupIndex
+    intc_1 // 1
+    -
+    dup
+    cover 2
+    dup
+    gtxns TypeEnum
+    intc_1 // pay
+    ==
+    assert // transaction type is pay
+    // contracts/modu_escrow.py:115-116
+    // # ── validate the ASA leg ───────────────────────────────────────
+    // assert payment.sender == Txn.sender, "payment sender must match caller"
+    dig 1
+    gtxns Sender
+    txn Sender
+    ==
+    assert // payment sender must match caller
+    // contracts/modu_escrow.py:117
+    // assert payment.asset_receiver == Global.current_application_address, (
+    dig 1
+    gtxns AssetReceiver
+    global CurrentApplicationAddress
+    ==
+    // contracts/modu_escrow.py:117-119
+    // assert payment.asset_receiver == Global.current_application_address, (
+    //     "payment must be sent to the app account"
+    // )
+    assert // payment must be sent to the app account
+    // contracts/modu_escrow.py:120
+    // assert payment.xfer_asset.id == self.asset_id, "wrong asset"
+    dig 1
+    gtxns XferAsset
+    intc_0 // 0
+    bytec_1 // "asset_id"
+    app_global_get_ex
+    assert // check self.asset_id exists
+    ==
+    assert // wrong asset
+    // contracts/modu_escrow.py:121
+    // assert payment.asset_amount > UInt64(0), "deposit must be positive"
+    swap
+    gtxns AssetAmount
+    dup
+    cover 2
+    assert // deposit must be positive
+    // contracts/modu_escrow.py:123-124
+    // # ── validate the MBR leg ──────────────────────────────────────
+    // assert mbr_payment.receiver == Global.current_application_address, (
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    // contracts/modu_escrow.py:123-126
+    // # ── validate the MBR leg ──────────────────────────────────────
+    // assert mbr_payment.receiver == Global.current_application_address, (
+    //     "MBR payment must go to the app account"
+    // )
+    assert // MBR payment must go to the app account
+    // contracts/modu_escrow.py:127-128
+    // # For first-time depositors, the MBR payment must be sufficient.
+    // is_new_consumer = Txn.sender not in self.credit
+    bytec_2 // 0x6372656469745f
+    txn Sender
+    concat
+    box_len
+    bury 1
+    // contracts/modu_escrow.py:129
+    // if is_new_consumer:
+    bnz deposit_after_if_else@3
+    // contracts/modu_escrow.py:130
+    // assert mbr_payment.amount >= UInt64(CREDIT_BOX_MBR), (
+    dig 1
+    gtxns Amount
+    pushint 21300
+    >=
+    // contracts/modu_escrow.py:130-132
+    // assert mbr_payment.amount >= UInt64(CREDIT_BOX_MBR), (
+    //     "insufficient MBR payment for new credit box"
+    // )
+    assert // insufficient MBR payment for new credit box
+
+deposit_after_if_else@3:
+    // contracts/modu_escrow.py:134-135
+    // # ── credit the consumer ───────────────────────────────────────
+    // existing = self.credit.get(Txn.sender, default=UInt64(0))
+    bytec_2 // 0x6372656469745f
+    txn Sender
+    concat
+    box_get
+    swap
+    btoi
+    intc_0 // 0
+    swap
+    uncover 2
+    select
+    // contracts/modu_escrow.py:136
+    // self.credit[Txn.sender] = existing + payment.asset_amount
+    +
+    bytec_2 // 0x6372656469745f
+    txn Sender
+    concat
+    swap
+    itob
+    box_put
+    // contracts/modu_escrow.py:92
+    // @arc4.abimethod
+    intc_1 // 1
+    return
+
+
+// contracts.modu_escrow.ModuEscrow.use_credit[routing]() -> void:
+use_credit:
+    // contracts/modu_escrow.py:142
+    // @arc4.abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_2 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // contracts/modu_escrow.py:214
+    // assert Txn.sender == self.facilitator, "unauthorized: not facilitator"
+    txn Sender
+    intc_0 // 0
+    bytec 4 // "facilitator"
+    app_global_get_ex
+    assert // check self.facilitator exists
+    ==
+    assert // unauthorized: not facilitator
+    // contracts/modu_escrow.py:156
+    // balance = self.credit.get(consumer, default=UInt64(0))
+    bytec_2 // 0x6372656469745f
+    swap
+    concat
+    dup
+    box_get
+    swap
+    btoi
+    intc_0 // 0
+    swap
+    uncover 2
+    select
+    // contracts/modu_escrow.py:157
+    // assert balance >= self.price, "insufficient credit"
+    intc_0 // 0
+    bytec 5 // "price"
+    app_global_get_ex
+    assert // check self.price exists
+    dup2
+    >=
+    assert // insufficient credit
+    // contracts/modu_escrow.py:159
+    // self.credit[consumer] = balance - self.price
+    swap
+    dig 1
+    -
+    itob
+    uncover 2
+    swap
+    box_put
+    // contracts/modu_escrow.py:160
+    // self.provider_balance += self.price
+    intc_0 // 0
+    bytec_0 // "provider_balance"
+    app_global_get_ex
+    assert // check self.provider_balance exists
+    +
+    bytec_0 // "provider_balance"
+    swap
+    app_global_put
+    // contracts/modu_escrow.py:142
+    // @arc4.abimethod
+    intc_1 // 1
+    return
+
+
+// contracts.modu_escrow.ModuEscrow.withdraw[routing]() -> void:
+withdraw:
+    // contracts/modu_escrow.py:173
+    // self._require_provider()
+    callsub _require_provider
+    // contracts/modu_escrow.py:175
+    // amount = self.provider_balance
+    intc_0 // 0
+    bytec_0 // "provider_balance"
+    app_global_get_ex
+    assert // check self.provider_balance exists
+    // contracts/modu_escrow.py:176
+    // assert amount > UInt64(0), "nothing to withdraw"
+    dup
+    assert // nothing to withdraw
+    // contracts/modu_escrow.py:177
+    // self.provider_balance = UInt64(0)
+    bytec_0 // "provider_balance"
+    intc_0 // 0
+    app_global_put
+    // contracts/modu_escrow.py:179-184
+    // itxn.AssetTransfer(
+    //     xfer_asset=self.asset_id,
+    //     asset_receiver=self.provider,
+    //     asset_amount=amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // contracts/modu_escrow.py:180
+    // xfer_asset=self.asset_id,
+    intc_0 // 0
+    bytec_1 // "asset_id"
+    app_global_get_ex
+    assert // check self.asset_id exists
+    // contracts/modu_escrow.py:181
+    // asset_receiver=self.provider,
+    intc_0 // 0
+    bytec_3 // "provider"
+    app_global_get_ex
+    assert // check self.provider exists
+    uncover 2
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    itxn_field XferAsset
+    // contracts/modu_escrow.py:179
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // contracts/modu_escrow.py:183
+    // fee=UInt64(0),
+    intc_0 // 0
+    itxn_field Fee
+    // contracts/modu_escrow.py:179-184
+    // itxn.AssetTransfer(
+    //     xfer_asset=self.asset_id,
+    //     asset_receiver=self.provider,
+    //     asset_amount=amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // contracts/modu_escrow.py:166
+    // @arc4.abimethod
+    intc_1 // 1
+    return
+
+
+// contracts.modu_escrow.ModuEscrow.credit_balance[routing]() -> void:
+credit_balance:
+    // contracts/modu_escrow.py:190
+    // @arc4.abimethod(readonly=True)
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_2 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // contracts/modu_escrow.py:197
+    // return self.credit.get(consumer, default=UInt64(0))
+    bytec_2 // 0x6372656469745f
+    swap
+    concat
+    box_get
+    swap
+    btoi
+    intc_0 // 0
+    swap
+    uncover 2
+    select
+    // contracts/modu_escrow.py:190
+    // @arc4.abimethod(readonly=True)
+    itob
+    pushbytes 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+
+// contracts.modu_escrow.ModuEscrow._require_provider() -> void:
+_require_provider:
+    // contracts/modu_escrow.py:218
+    // assert Txn.sender == self.provider, "unauthorized: not provider"
+    txn Sender
+    intc_0 // 0
+    bytec_3 // "provider"
+    app_global_get_ex
+    assert // check self.provider exists
+    ==
+    assert // unauthorized: not provider
+    retsub
