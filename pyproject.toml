@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modu-escrow"
+version = "0.1.0"
+description = "ModuEscrow — pay-per-call credit escrow for the modu x402 proxy (Algorand ARC4)"
+requires-python = ">=3.12"
+dependencies = [
+    "algorand-python>=2.0.0,<3.0.0",  # v2.x is compatible with puya 0.6
+    "algokit-utils>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "algorand-python-testing>=0.5.0,<1.0.0",  # matches algorand-python 2.x
+    "puyapy>=5.0.0",                           # Algorand Foundation compiler for algorand-python 2.x
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.algokit]
+min_version = "2.0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["contracts", "scripts"]
